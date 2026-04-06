@@ -92,6 +92,7 @@ def predict():
             "probability": round(float(probability) * 100, 2),
             "status": "success"
         }
+        
         return jsonify(result)
 
     except Exception as e:
