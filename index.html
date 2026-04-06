@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Heart Failure Prediction</title>
+  <style>
+    /* ── Reset & Base ── */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      padding: 30px 16px;
+    }
+
+    /* ── Page Header ── */
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      font-size: 28px;
+      color: #1a202c;
+      margin-bottom: 6px;
+    }
+    .header p {
+      color: #666;
+      font-size: 14px;
+    }
+    .heart-icon {
+      font-size: 40px;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    /* ── Main Card ── */
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 28px;
+      max-width: 780px;
+      margin: 0 auto;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    .card h2 {
+      font-size: 17px;
+      color: #2d3748;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    /* ── Form Grid ── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 560px) {
+      .form-grid { grid-template-columns: 1fr; }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .form-group label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #4a5568;
+    }
+
+    .form-group small {
+      font-size: 11px;
+      color: #999;
+    }
+
+    .form-group input,
+    .form-group select {
+      padding: 9px 12px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 7px;
+      font-size: 14px;
+      color: #2d3748;
+      background: #f7fafc;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: #e53e3e;
+      background: white;
+    }
+
+    /* ── Submit Button ── */
+    .btn-predict {
+      width: 100%;
+      margin-top: 22px;
+      padding: 13px;
+      background: #e53e3e;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-predict:hover { background: #c53030; }
+    .btn-predict:disabled { background: #ccc; cursor: not-allowed; }
+
+    /* ── Result Box ── */
+    #result-box {
+      display: none;
+      margin-top: 24px;
+      border-radius: 10px;
+      padding: 20px 24px;
+      text-align: center;
+    }
+
+    #result-box.high-risk {
+      background: #fff5f5;
+      border: 2px solid #fc8181;
+    }
+
+    #result-box.low-risk {
+      background: #f0fff4;
+      border: 2px solid #68d391;
+    }
+
+    #result-box.error-box {
+      background: #fffbeb;
+      border: 2px solid #f6ad55;
+    }
+
+    .result-icon { font-size: 38px; margin-bottom: 8px; }
+
+    .result-label {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .high-risk .result-label { color: #c53030; }
+    .low-risk  .result-label { color: #276749; }
+
+    .result-prob {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 14px;
+    }
+
+    /* ── Probability Bar ── */
+    .prob-bar-bg {
+      background: #e2e8f0;
+      border-radius: 20px;
+      height: 14px;
+      overflow: hidden;
+      margin: 0 auto;
+      max-width: 400px;
+    }
+
+    .prob-bar-fill {
+      height: 100%;
+      border-radius: 20px;
+      transition: width 0.8s ease;
+    }
+
+    .high-risk .prob-bar-fill { background: #e53e3e; }
+    .low-risk  .prob-bar-fill { background: #38a169; }
+
+    .prob-note {
+      font-size: 11px;
+      color: #999;
+      margin-top: 10px;
+    }
+
+    /* ── Loading spinner ── */
+    .spinner {
+      display: inline-block;
+      width: 18px; height: 18px;
+      border: 3px solid #fff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Info strip ── */
+    .info-strip {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+    .info-chip {
+      background: #ebf8ff;
+      color: #2b6cb0;
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Page Header -->
+  <div class="header">
+    <span class="heart-icon">🫀</span>
+    <h1>Heart Failure Prediction System</h1>
+    <p>Enter patient clinical data below to predict survival risk</p>
+  </div>
+
+  <!-- Main Form Card -->
+  <div class="card">
+    <h2>Patient Clinical Information</h2>
+
+    <div class="form-grid">
+
+      <!-- Age -->
+      <div class="form-group">
+        <label>Age (years)</label>
+        <small>Patient age between 18 and 100</small>
+        <input type="number" id="age" placeholder="e.g. 65" min="18" max="100" />
+      </div>
+
+      <!-- Follow-up Time -->
+      <div class="form-group">
+        <label>Follow-up Period (days)</label>
+        <small>Number of days patient was monitored</small>
+        <input type="number" id="time" placeholder="e.g. 60" min="1" max="300" />
+      </div>
+
+      <!-- Ejection Fraction -->
+      <div class="form-group">
+        <label>Ejection Fraction (%)</label>
+        <small>Percentage of blood pumped per beat (normal = 55-70%)</small>
+        <input type="number" id="ejection_fraction" placeholder="e.g. 38" min="10" max="80" />
+      </div>
+
+      <!-- Serum Creatinine -->
+      <div class="form-group">
+        <label>Serum Creatinine (mg/dL)</label>
+        <small>Kidney function indicator (normal = 0.6 - 1.2)</small>
+        <input type="number" id="serum_creatinine" step="0.1" placeholder="e.g. 1.1" min="0.1" max="10" />
+      </div>
+
+      <!-- Serum Sodium -->
+      <div class="form-group">
+        <label>Serum Sodium (mEq/L)</label>
+        <small>Blood sodium level (normal = 135 - 145)</small>
+        <input type="number" id="serum_sodium" placeholder="e.g. 137" min="100" max="150" />
+      </div>
+
+      <!-- Creatinine Phosphokinase -->
+      <div class="form-group">
+        <label>Creatinine Phosphokinase (mcg/L)</label>
+        <small>Enzyme level in blood (normal = 10 - 120)</small>
+        <input type="number" id="creatinine_phosphokinase" placeholder="e.g. 250" min="10" max="10000" />
+      </div>
+
+      <!-- Platelets -->
+      <div class="form-group">
+        <label>Platelets (kiloplatelets/mL)</label>
+        <small>Normal range = 150,000 - 400,000</small>
+        <input type="number" id="platelets" placeholder="e.g. 265000" min="10000" max="900000" />
+      </div>
+
+      <!-- Sex -->
+      <div class="form-group">
+        <label>Sex</label>
+        <small>Biological sex of patient</small>
+        <select id="sex">
+          <option value="">-- Select --</option>
+          <option value="1">Male</option>
+          <option value="0">Female</option>
+        </select>
+      </div>
+
+      <!-- Anaemia -->
+      <div class="form-group">
+        <label>Anaemia</label>
+        <small>Low red blood cells or haemoglobin</small>
+        <select id="anaemia">
+          <option value="">-- Select --</option>
+          <option value="0">No</option>
+          <option value="1">Yes</option>
+        </select>
+      </div>
+
+      <!-- Diabetes -->
+      <div class="form-group">
+        <label>Diabetes</label>
+        <small>Does the patient have diabetes?</small>
+        <select id="diabetes">
+          <option value="">-- Select --</option>
+          <option value="0">No</option>
+          <option value="1">Yes</option>
+        </select>
+      </div>
+
+      <!-- High Blood Pressure -->
+      <div class="form-group">
+        <label>High Blood Pressure</label>
+        <small>Does patient have hypertension?</small>
+        <select id="high_blood_pressure">
+          <option value="">-- Select --</option>
+          <option value="0">No</option>
+          <option value="1">Yes</option>
+        </select>
+      </div>
+
+      <!-- Smoking -->
+      <div class="form-group">
+        <label>Smoking</label>
+        <small>Does the patient smoke?</small>
+        <select id="smoking">
+          <option value="">-- Select --</option>
+          <option value="0">No</option>
+          <option value="1">Yes</option>
+        </select>
+      </div>
+
+    </div><!-- end form-grid -->
+
+    <!-- Predict Button -->
+    <button class="btn-predict" id="predict-btn" onclick="predict()">
+      Predict Survival Risk
+    </button>
+
+    <!-- Result Box -->
+    <div id="result-box">
+      <div class="result-icon" id="result-icon"></div>
+      <div class="result-label" id="result-label"></div>
+      <div class="result-prob" id="result-prob"></div>
+      <div class="prob-bar-bg">
+        <div class="prob-bar-fill" id="prob-bar" style="width: 0%"></div>
+      </div>
+      <p class="prob-note" id="prob-note"></p>
+    </div>
+
+    <!-- Info chips -->
+    <div class="info-strip">
+      <span class="info-chip">Machine Learning Model</span>
+      <span class="info-chip">12 Clinical Features</span>
+      <span class="info-chip">College Research Project</span>
+      <span class="info-chip">Not for real clinical use</span>
+    </div>
+
+  </div><!-- end card -->
+
+
+  <script>
+    // ── Predict function called when button is clicked ──
+    async function predict() {
+
+      // Step 1: Get all input values
+      const fields = [
+        'age', 'time', 'ejection_fraction', 'serum_creatinine',
+        'serum_sodium', 'creatinine_phosphokinase', 'platelets',
+        'sex', 'anaemia', 'diabetes', 'high_blood_pressure', 'smoking'
+      ];
+
+      const data = {};
+      for (const field of fields) {
+        const val = document.getElementById(field).value;
+        if (val === '' || val === null) {
+          alert('Please fill in all fields before predicting!');
+          return;
+        }
+        data[field] = parseFloat(val);
+      }
+
+      // Step 2: Show loading state on button
+      const btn = document.getElementById('predict-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Predicting...';
+
+      // Step 3: Hide old result
+      document.getElementById('result-box').style.display = 'none';
+
+      try {
+        // Step 4: Send data to Flask backend
+        const response = await fetch('/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        // Step 5: Show result
+        if (result.status === 'success') {
+          showResult(result);
+        } else {
+          showError(result.message);
+        }
+
+      } catch (err) {
+        showError('Could not connect to server. Make sure Flask is running (python app.py).');
+      }
+
+      // Step 6: Reset button
+      btn.disabled = false;
+      btn.innerHTML = 'Predict Survival Risk';
+    }
+
+
+    // ── Show prediction result ──
+    function showResult(result) {
+      const box   = document.getElementById('result-box');
+      const icon  = document.getElementById('result-icon');
+      const label = document.getElementById('result-label');
+      const prob  = document.getElementById('result-prob');
+      const bar   = document.getElementById('prob-bar');
+      const note  = document.getElementById('prob-note');
+
+      // Set content
+      if (result.prediction === 1) {
+        box.className = 'high-risk';
+        icon.textContent = '⚠️';
+      } else {
+        box.className = 'low-risk';
+        icon.textContent = '✅';
+      }
+
+      label.textContent = result.label;
+      prob.textContent  = 'Death probability: ' + result.probability + '%';
+      bar.style.width   = result.probability + '%';
+      note.textContent  = 'This is a research model. Always consult a doctor for medical decisions.';
+
+      box.style.display = 'block';
+
+      // Smooth scroll to result
+      box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+
+    // ── Show error message ──
+    function showError(message) {
+      const box = document.getElementById('result-box');
+      box.className = 'error-box';
+      box.style.display = 'block';
+      document.getElementById('result-icon').textContent  = '❌';
+      document.getElementById('result-label').textContent = 'Error';
+      document.getElementById('result-label').style.color = '#c05621';
+      document.getElementById('result-prob').textContent  = message;
+      document.getElementById('prob-bar').style.width     = '0%';
+      document.getElementById('prob-note').textContent    = '';
+    }
+
+  </script>
+
+</body>
+</html>
