@@ -94,7 +94,6 @@ def predict():
         }
         return jsonify(result)
 
-
     except Exception as e:
         # If anything goes wrong, send error message
         return jsonify({"status": "error", "message": str(e)}), 400
