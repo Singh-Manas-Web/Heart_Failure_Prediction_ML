@@ -88,7 +88,7 @@ def predict():
         # Step 7: Send result back to frontend
         result = {
             "prediction": int(prediction),
-            "label": "HIGH RISK - May Not Survive" if prediction == 1 else "LOW RISK - Likely to Survive",
+            "label": "HIGH RISK " if prediction == 1 else "LOW RISK ",
             "probability": round(float(probability) * 100, 2),
             "status": "success"
         }

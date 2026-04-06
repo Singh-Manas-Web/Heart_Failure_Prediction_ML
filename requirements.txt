@@ -6,4 +6,4 @@ shap
 matplotlib
 seaborn
 pickle5
-jupyter
+jupyterclear
